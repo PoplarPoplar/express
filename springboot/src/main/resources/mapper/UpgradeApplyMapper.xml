@@ -1,0 +1,74 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.UpgradeApplyMapper">
+
+    <select id="selectAll" resultType="com.example.entity.UpgradeApply">
+        select upgrade_apply.*, student.name as courierName, courier_commission.name as commissionName from `upgrade_apply`
+        left join student on upgrade_apply.courier_id = student.id
+        left join courier_commission on upgrade_apply.commission_id = courier_commission.id
+        <where>
+            <if test="courierName != null"> and  student.name like concat('%', #{courierName}, '%')</if>
+            <if test="courierId != null"> and  upgrade_apply.courier_id = #{courierId}</if>
+        </where>
+        order by upgrade_apply.id desc
+    </select>
+
+    <delete id="deleteById">
+        delete from `upgrade_apply`
+        where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.UpgradeApply" useGeneratedKeys="true">
+        insert into upgrade_apply
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="courierId != null">courier_id,</if>
+            <if test="commissionId != null">commission_id,</if>
+            <if test="reason != null">reason,</if>
+            <if test="img != null">img,</if>
+            <if test="status != null">status,</if>
+            <if test="time != null">time,</if>
+            <if test="replyContent != null">reply_content,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="courierId != null">#{courierId},</if>
+            <if test="commissionId != null">#{commissionId},</if>
+            <if test="reason != null">#{reason},</if>
+            <if test="img != null">#{img},</if>
+            <if test="status != null">#{status},</if>
+            <if test="time != null">#{time},</if>
+            <if test="replyContent != null">#{replyContent},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.UpgradeApply">
+        update upgrade_apply
+        <set>
+            <if test="courierId != null">
+                courier_id = #{courierId},
+            </if>
+            <if test="commissionId != null">
+                commission_id = #{commissionId},
+            </if>
+            <if test="reason != null">
+                reason = #{reason},
+            </if>
+            <if test="img != null">
+                img = #{img},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="time != null">
+                time = #{time},
+            </if>
+            <if test="replyContent != null">
+                reply_content = #{replyContent},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>

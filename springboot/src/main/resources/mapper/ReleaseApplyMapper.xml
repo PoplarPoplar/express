@@ -1,0 +1,68 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.ReleaseApplyMapper">
+
+    <select id="selectAll" resultType="com.example.entity.ReleaseApply">
+        select release_apply.*, student.name as courierName from `release_apply`
+        left join student on release_apply.courier_id = student.id
+        <where>
+            <if test="courierName != null"> and student.name like concat('%', #{courierName}, '%')</if>
+            <if test="courierId != null"> and release_apply.courier_id = #{courierId}</if>
+        </where>
+        order by release_apply.id desc
+    </select>
+
+    <delete id="deleteById">
+        delete from `release_apply`
+        where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.ReleaseApply" useGeneratedKeys="true">
+        insert into release_apply
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="courierId != null">courier_id,</if>
+            <if test="img != null">img,</if>
+            <if test="reason != null">reason,</if>
+            <if test="time != null">time,</if>
+            <if test="status != null">status,</if>
+            <if test="reply != null">reply,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="courierId != null">#{courierId},</if>
+            <if test="img != null">#{img},</if>
+            <if test="reason != null">#{reason},</if>
+            <if test="time != null">#{time},</if>
+            <if test="status != null">#{status},</if>
+            <if test="reply != null">#{reply},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.ReleaseApply">
+        update release_apply
+        <set>
+            <if test="courierId != null">
+                courier_id = #{courierId},
+            </if>
+            <if test="img != null">
+                img = #{img},
+            </if>
+            <if test="reason != null">
+                reason = #{reason},
+            </if>
+            <if test="time != null">
+                time = #{time},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="reply != null">
+                reply = #{reply},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>

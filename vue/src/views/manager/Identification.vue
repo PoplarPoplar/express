@@ -1,0 +1,181 @@
+<template>
+  <div>
+    <div class="card" style="margin-bottom: 5px">
+      <el-input v-model="data.name" prefix-icon="Search" style="width: 240px; margin-right: 10px" placeholder="请输入真实名称查询"></el-input>
+      <el-button type="info" plain @click="load">查询</el-button>
+      <el-button type="warning" plain style="margin: 0 10px" @click="reset">重置</el-button>
+    </div>
+    <div class="card" style="margin-bottom: 5px">
+      <el-button type="danger" plain @click="delBatch">批量删除</el-button>
+    </div>
+
+    <div class="card" style="margin-bottom: 5px">
+      <el-table stripe :data="data.tableData" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="studentName" label="学生名称"></el-table-column>
+        <el-table-column prop="name" label="真实名称"></el-table-column>
+        <el-table-column prop="address" label="当前住址"></el-table-column>
+        <el-table-column prop="phone" label="手机号"></el-table-column>
+        <el-table-column prop="cardNo" label="身份证号"></el-table-column>
+        <el-table-column prop="cardFront" label="身份证正面照片">
+          <template #default="scope">
+            <el-image style="width: 80px; height: 50px; border-radius: 5px" :src="scope.row.cardFront" :preview-src-list="[scope.row.cardFront]" preview-teleported></el-image>
+          </template>
+        </el-table-column>
+        <el-table-column prop="cardBack" label="身份证背面照片">
+          <template #default="scope">
+            <el-image style="width: 80px; height: 50px; border-radius: 5px" :src="scope.row.cardBack" :preview-src-list="[scope.row.cardBack]" preview-teleported></el-image>
+          </template>
+        </el-table-column>
+        <el-table-column prop="status" label="认证状态">
+          <template v-slot="scope">
+            <el-tag type="warning" v-if="scope.row.status === '待审核'">待审核</el-tag>
+            <el-tag type="success" v-if="scope.row.status === '通过'">通过</el-tag>
+            <el-tag type="danger" v-if="scope.row.status === '拒绝'">拒绝</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="commissionName" label="代取员初始等级"></el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template v-slot="scope">
+            <el-button type="primary" @click="changeStatus(scope.row, '通过')" plain v-if="scope.row.status === '待审核'">通过</el-button>
+            <el-button type="danger" @click="changeStatus(scope.row, '拒绝')" plain v-if="scope.row.status === '待审核'">拒绝</el-button>
+            <el-button type="danger" circle :icon="Delete" @click="del(scope.row.id)"></el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+    <div class="card" v-if="data.total">
+      <el-pagination @current-change="load" background layout="prev, pager, next" :page-size="data.pageSize" v-model:current-page="data.pageNum" :total="data.total" />
+    </div>
+
+  </div>
+</template>
+
+<script setup>
+
+import {reactive} from "vue";
+import request from "@/utils/request.js";
+import {ElMessage, ElMessageBox} from "element-plus";
+import {Delete, Edit} from "@element-plus/icons-vue";
+
+
+const data = reactive({
+  formVisible: false,
+  form: {},
+  tableData: [],
+  pageNum: 1,
+  pageSize: 10,
+  total: 0,
+  name: null,
+  ids: []
+})
+
+const load = () => {
+  request.get('/identification/selectPage', {
+    params: {
+      pageNum: data.pageNum,
+      pageSize: data.pageSize,
+      name: data.name
+    }
+  }).then(res => {
+    if (res.code === '200') {
+      data.tableData = res.data?.list || []
+      data.total = res.data?.total
+    } else {
+      ElMessage.error(res.msg)
+    }
+  })
+}
+const handleAdd = () => {
+  data.form = { price: 1 }
+  data.formVisible = true
+}
+const handleEdit = (row) => {
+  data.form = JSON.parse(JSON.stringify(row))
+  data.formVisible = true
+}
+const add = () => {
+  request.post('/identification/add', data.form).then(res => {
+    if (res.code === '200') {
+      ElMessage.success('操作成功')
+      data.formVisible = false
+      load()
+    } else {
+      ElMessage.error(res.msg)
+    }
+  })
+}
+
+const changeStatus = (row, status) => {
+  ElMessageBox.confirm('您确认审核' + status + '吗？', '审核确认', { type: 'warning' }).then(res => {
+    row.status = status
+    request.put('/identification/update', row).then(res => {
+      if (res.code === '200') {
+        ElMessage.success('审核成功')
+        load()
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+  })
+}
+
+const update = () => {
+  request.put('/identification/update', data.form).then(res => {
+    if (res.code === '200') {
+      ElMessage.success('操作成功')
+      data.formVisible = false
+      load()
+    } else {
+      ElMessage.error(res.msg)
+    }
+  })
+}
+
+const save = () => {
+  data.form.id ? update() : add()
+}
+
+const del = (id) => {
+  ElMessageBox.confirm('删除后数据无法恢复，您确定删除吗？', '删除确认', { type: 'warning' }).then(res => {
+    request.delete('/identification/delete/' + id).then(res => {
+      if (res.code === '200') {
+        ElMessage.success("删除成功")
+        load()
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+  }).catch(err => {
+    console.error(err)
+  })
+}
+const delBatch = () => {
+  if (!data.ids.length) {
+    ElMessage.warning("请选择数据")
+    return
+  }
+  ElMessageBox.confirm('删除后数据无法恢复，您确定删除吗？', '删除确认', { type: 'warning' }).then(res => {
+    request.delete("/identification/delete/batch", {data: data.ids}).then(res => {
+      if (res.code === '200') {
+        ElMessage.success('操作成功')
+        load()
+      } else {
+        ElMessage.error(res.msg)
+      }
+    })
+  }).catch(err => {
+    console.error(err)
+  })
+}
+const handleSelectionChange = (rows) => {
+  data.ids = rows.map(v => v.id)
+}
+
+const reset = () => {
+  data.name = null
+  load()
+}
+
+load()
+</script>

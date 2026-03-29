@@ -1,0 +1,84 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.IdentificationMapper">
+
+    <select id="selectAll" resultType="com.example.entity.Identification">
+        select identification.*, student.name as studentName, courier_commission.name as commissionName from `identification`
+        left join student on identification.student_id = student.id
+        left join courier_commission on identification.commission_id = courier_commission.id
+        <where>
+            <if test="name != null"> and identification.name like concat('%', #{name}, '%')</if>
+            <if test="studentId != null"> and identification.student_id = #{studentId}</if>
+        </where>
+        order by identification.id desc
+    </select>
+
+    <delete id="deleteById">
+        delete from `identification`
+        where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.Identification" useGeneratedKeys="true">
+        insert into identification
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="studentId != null">student_id,</if>
+            <if test="name != null">name,</if>
+            <if test="address != null">address,</if>
+            <if test="phone != null">phone,</if>
+            <if test="cardNo != null">card_no,</if>
+            <if test="cardFront != null">card_front,</if>
+            <if test="cardBack != null">card_back,</if>
+            <if test="status != null">status,</if>
+            <if test="commissionId != null">commission_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="studentId != null">#{studentId},</if>
+            <if test="name != null">#{name},</if>
+            <if test="address != null">#{address},</if>
+            <if test="phone != null">#{phone},</if>
+            <if test="cardNo != null">#{cardNo},</if>
+            <if test="cardFront != null">#{cardFront},</if>
+            <if test="cardBack != null">#{cardBack},</if>
+            <if test="status != null">#{status},</if>
+            <if test="commissionId != null">#{commissionId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.Identification">
+        update identification
+        <set>
+            <if test="studentId != null">
+                student_id = #{studentId},
+            </if>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="cardNo != null">
+                card_no = #{cardNo},
+            </if>
+            <if test="cardFront != null">
+                card_front = #{cardFront},
+            </if>
+            <if test="cardBack != null">
+                card_back = #{cardBack},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="commissionId != null">
+                commission_id = #{commissionId},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>

@@ -1,0 +1,63 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.AddressMapper">
+
+    <select id="selectAll" resultType="com.example.entity.Address">
+        select address.*, student.name as studentName from `address`
+        left join student on address.student_id = student.id
+        <where>
+            <if test="name != null"> and address.name like concat('%', #{name}, '%')</if>
+            <if test="studentId != null"> and address.student_id = #{studentId}</if>
+        </where>
+        order by address.id desc
+    </select>
+
+    <delete id="deleteById">
+        delete from `address`
+        where id = #{id}
+    </delete>
+
+    <insert id="insert" parameterType="com.example.entity.Address" useGeneratedKeys="true">
+        insert into address
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="studentId != null">student_id,</if>
+            <if test="address != null">address,</if>
+            <if test="phone != null">phone,</if>
+            <if test="name != null">name,</if>
+            <if test="asDefault != null">as_default,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="studentId != null">#{studentId},</if>
+            <if test="address != null">#{address},</if>
+            <if test="phone != null">#{phone},</if>
+            <if test="name != null">#{name},</if>
+            <if test="asDefault != null">#{asDefault},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.Address">
+        update address
+        <set>
+            <if test="studentId != null">
+                student_id = #{studentId},
+            </if>
+            <if test="address != null">
+                address = #{address},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="name != null">
+                name = #{name},
+            </if>
+            <if test="asDefault != null">
+                as_default = #{asDefault},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+</mapper>
