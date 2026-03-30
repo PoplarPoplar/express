@@ -15,7 +15,7 @@
         <div style="padding: 5px 0">隐私政策商标声明</div>
         <div style="padding: 5px 0">服务协议</div>
         <div style="padding: 5px 0">校园快递代取平台服务协议</div>
-        <div style="padding: 5px 0">网络信息侵权通知指引</div>
+        <div style="padding: 5px 0">用户反馈与申诉指引</div>
         <div style="padding: 5px 0">校园快递代取平台服务监督员</div>
         <div style="padding: 5px 0">网站地图加入校园快递代取平台</div>
       </div>
