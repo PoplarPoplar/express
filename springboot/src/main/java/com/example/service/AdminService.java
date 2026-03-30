@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.example.anno.LogOperation;
 import com.example.common.Constants;
 import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
@@ -39,7 +40,7 @@ public class AdminService {
         admin.setRole(RoleEnum.ADMIN.name());
         adminMapper.insert(admin);
     }
-
+    @LogOperation
     public void updateById(Admin admin) {
         adminMapper.updateById(admin);
     }
