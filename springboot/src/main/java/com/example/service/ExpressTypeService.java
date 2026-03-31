@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.entity.ExpressType;
 import com.example.mapper.ExpressTypeMapper;
 import com.github.pagehelper.PageHelper;
@@ -19,18 +20,22 @@ public class ExpressTypeService {
     @Resource
     private ExpressTypeMapper expressTypeMapper;
 
+    @LogOperation
     public void add(ExpressType expressType) {
         expressTypeMapper.insert(expressType);
     }
 
+    @LogOperation
     public void updateById(ExpressType expressType) {
         expressTypeMapper.updateById(expressType);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         expressTypeMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             expressTypeMapper.deleteById(id);

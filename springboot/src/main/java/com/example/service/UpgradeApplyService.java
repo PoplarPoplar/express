@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.Student;
@@ -27,6 +28,7 @@ public class UpgradeApplyService {
     @Resource
     private StudentService studentService;
 
+    @LogOperation
     public void add(UpgradeApply upgradeApply) {
         upgradeApply.setTime(DateUtil.now());
         upgradeApply.setStatus("待审核");
@@ -40,6 +42,7 @@ public class UpgradeApplyService {
         upgradeApplyMapper.insert(upgradeApply);
     }
 
+    @LogOperation
     public void updateById(UpgradeApply upgradeApply) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.ADMIN.name().equals(currentUser.getRole()) && "通过".equals(upgradeApply.getStatus())) {
@@ -51,10 +54,12 @@ public class UpgradeApplyService {
         upgradeApplyMapper.updateById(upgradeApply);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         upgradeApplyMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             upgradeApplyMapper.deleteById(id);

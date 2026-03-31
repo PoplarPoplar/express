@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.entity.Notice;
 import com.example.mapper.NoticeMapper;
 import com.github.pagehelper.PageHelper;
@@ -19,19 +20,23 @@ public class NoticeService {
     @Resource
     private NoticeMapper noticeMapper;
 
+    @LogOperation
     public void add(Notice notice) {
         notice.setTime(DateUtil.now());
         noticeMapper.insert(notice);
     }
 
+    @LogOperation
     public void updateById(Notice notice) {
         noticeMapper.updateById(notice);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         noticeMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             noticeMapper.deleteById(id);

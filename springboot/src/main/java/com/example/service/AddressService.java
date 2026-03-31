@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.Address;
@@ -22,6 +23,7 @@ public class AddressService {
     @Resource
     private AddressMapper addressMapper;
 
+    @LogOperation
     public void add(Address address) {
         // 当前学生
         Account currentUser = TokenUtils.getCurrentUser();
@@ -29,14 +31,17 @@ public class AddressService {
         addressMapper.insert(address);
     }
 
+    @LogOperation
     public void updateById(Address address) {
         addressMapper.updateById(address);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         addressMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             addressMapper.deleteById(id);

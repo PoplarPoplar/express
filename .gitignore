@@ -1,0 +1,20 @@
+# Maven/IDE
+/springboot/target/
+*.iml
+.idea/
+/.classpath
+/.project
+/out/
+
+# Node
+/vue/node_modules/
+/vue/dist/
+
+# Logs
+/logs/
+/springboot/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+

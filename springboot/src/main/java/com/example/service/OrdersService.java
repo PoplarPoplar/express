@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.CourierCommission;
@@ -32,6 +33,7 @@ public class OrdersService {
     @Resource
     private CourierCommissionService courierCommissionService;
 
+    @LogOperation
     public void add(Orders orders) {
         orders.setOrderNo(System.currentTimeMillis() + "");
         orders.setCreateTime(DateUtil.now());  // 当前的时间 字符串
@@ -43,13 +45,14 @@ public class OrdersService {
     }
 
     @Transactional
+    @LogOperation
     public void updateById(Orders orders) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.STUDENT.name().equals(currentUser.getRole())) {
             String status = orders.getStatus();
             if ("待接单".equals(status)) {  // 表示用户要支付   扣除用户余额
                 Integer amount = currentUser.getAmount();
-                if (amount < orders.getPrice()) {  // 用户的账户余额小于订单的总价   支付失败
+                if (amount < orders.getPrice()) {  // 用户的账户余额小于订单的总价   扣除用户余额
                     throw new CustomException("500", "抱歉，账户余额不足，请及时充值");
                 } else {
                     currentUser.setAmount(currentUser.getAmount() - orders.getPrice());  // 更新学生的账户余额
@@ -80,10 +83,12 @@ public class OrdersService {
         ordersMapper.updateById(orders);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         ordersMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             ordersMapper.deleteById(id);

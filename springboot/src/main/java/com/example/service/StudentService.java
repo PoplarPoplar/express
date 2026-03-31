@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.example.anno.LogOperation;
 import com.example.common.Constants;
 import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
@@ -36,6 +37,7 @@ public class StudentService {
     @Resource
     CourierCommissionService courierCommissionService;
 
+    @LogOperation
     public void add(Student student) {
         Student dbStudent = studentMapper.selectByUsername(student.getUsername());
         if (ObjectUtil.isNotNull(dbStudent)) {
@@ -53,14 +55,17 @@ public class StudentService {
         studentMapper.insert(student);
     }
 
+    @LogOperation
     public void updateById(Student student) {
         studentMapper.updateById(student);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         studentMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             studentMapper.deleteById(id);
@@ -130,6 +135,7 @@ public class StudentService {
     /**
      * 学生登录
      */
+    @LogOperation
     public Student login(Account account) {
         Student dbStudent = studentMapper.selectByUsername(account.getUsername());
         if (ObjectUtil.isNull(dbStudent)) {
@@ -151,6 +157,7 @@ public class StudentService {
     /**
      * 修改密码
      */
+    @LogOperation
     public void updatePassword(Account account) {
         Student dbStudent = studentMapper.selectByUsername(account.getUsername());
         if (ObjectUtil.isNull(dbStudent)) {
@@ -166,6 +173,7 @@ public class StudentService {
     /**
      * 代取员登录
      */
+    @LogOperation
     public Account courierLogin(Account account) {
         Student courier = studentMapper.selectByUsername(account.getUsername());
         if (ObjectUtil.isNull(courier)) {

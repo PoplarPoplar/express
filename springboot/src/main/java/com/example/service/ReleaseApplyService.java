@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.ReleaseApply;
@@ -27,6 +28,7 @@ public class ReleaseApplyService {
     @Resource
     private StudentService studentService;
 
+    @LogOperation
     public void add(ReleaseApply releaseApply) {
         releaseApply.setTime(DateUtil.now());
         releaseApply.setStatus("待审核");
@@ -40,6 +42,7 @@ public class ReleaseApplyService {
         releaseApplyMapper.insert(releaseApply);
     }
 
+    @LogOperation
     public void updateById(ReleaseApply releaseApply) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.ADMIN.name().equals(currentUser.getRole()) && "通过".equals(releaseApply.getStatus())) {
@@ -51,10 +54,12 @@ public class ReleaseApplyService {
         releaseApplyMapper.updateById(releaseApply);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         releaseApplyMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             releaseApplyMapper.deleteById(id);

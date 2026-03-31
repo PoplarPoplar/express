@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.Feedback;
@@ -22,6 +23,7 @@ public class FeedbackService {
     @Resource
     private FeedbackMapper feedbackMapper;
 
+    @LogOperation
     public void add(Feedback feedback) {
         feedback.setTime(DateUtil.now());
         Account currentUser = TokenUtils.getCurrentUser();
@@ -30,6 +32,7 @@ public class FeedbackService {
         feedbackMapper.insert(feedback);
     }
 
+    @LogOperation
     public void updateById(Feedback feedback) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.ADMIN.name().equals(currentUser.getRole())) {
@@ -38,10 +41,12 @@ public class FeedbackService {
         feedbackMapper.updateById(feedback);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         feedbackMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             feedbackMapper.deleteById(id);

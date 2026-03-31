@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <!--
+        logback-spring.xml for the project
+        - 支持 Spring Boot profiles (springProfile)
+        - 输出 MDC 中的 traceId/userId（若你的业务有设置这些 MDC 值，则会被打印）
+        - 控制台、按时间+大小滚动文件、单独的错误日志文件
+        - 将文件写入包装在 AsyncAppender 里以减小对主线程的影响
+    -->
+
+    <!-- 可通过环境变量或系统属性覆盖这些值 -->
+    <!-- 默认写到仓库的 springboot/logs 目录（相对于项目根：springboot/logs）。
+         注意：logback 的相对路径是基于 JVM 的当前工作目录（user.dir），
+         所以若 IDE/启动器的工作目录为项目根，'springboot/logs' 会指向你想要的位置。
+         如果你的工作目录是 springboot 模块本身，启动时请使用 -DLOG_PATH=./logs 或者将下面的默认值改为绝对路径。
+    -->
+    <property name="LOG_PATH" value="${LOG_PATH:-springboot/logs}" />
+    <property name="LOG_FILE" value="${LOG_FILE:-app.log}" />
+    <property name="MAX_HISTORY" value="${LOG_MAX_HISTORY:-30}" />
+    <property name="MAX_FILE_SIZE" value="${LOG_MAX_FILE_SIZE:-10MB}" />
+    <property name="TOTAL_SIZE_CAP" value="${LOG_TOTAL_SIZE_CAP:-1GB}" />
+
+    <!-- 引入 Spring Boot 的默认配置片段（可选） -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+    <!-- 控制台输出格式 -->
+    <springProfile name="dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg %n%ex{full}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <springProfile name="!dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg %n</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <!-- 主要日志文件：按天切分且支持按大小滚动 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 按天归档并支持按大小切分文件 -->
+            <fileNamePattern>${LOG_PATH}/${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <!-- move MDC before the final newline so the %n conversion isn't immediately followed by letters -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg MDC[traceId=%X{traceId}, userId=%X{userId}]%n%ex{full}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 单独的错误日志文件（只记录 ERROR 级别） -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/error.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>${MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <!-- same fix for error file pattern -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg MDC[traceId=%X{traceId}, userId=%X{userId}]%n%ex{full}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 将文件类 appenders 包装到异步 appender 中，减少日志对业务线程的影响 -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE" />
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+    </appender>
+
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ERROR_FILE" />
+        <queueSize>256</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
+    </appender>
+
+    <!-- 你可以根据包名单独设置日志级别 -->
+    <logger name="com.example" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_FILE" />
+        <appender-ref ref="ASYNC_ERROR_FILE" />
+        <!-- also print com.example logs to console for immediate visibility -->
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+    <!-- Spring 相关的日志略高一点 -->
+    <logger name="org.springframework" level="INFO" />
+    <logger name="org.hibernate" level="WARN" />
+
+    <!-- 根日志 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="ASYNC_FILE" />
+        <appender-ref ref="ASYNC_ERROR_FILE" />
+    </root>
+
+</configuration>
+

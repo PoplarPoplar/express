@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.anno.LogOperation;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.CourierCommission;
@@ -30,6 +31,7 @@ public class IdentificationService {
     private StudentService studentService;
 
     @Transactional
+    @LogOperation
     public void add(Identification identification) {
         Account currentUser = TokenUtils.getCurrentUser();  // 获取到当前的登录用户信息
         identification.setStudentId(currentUser.getId());
@@ -48,6 +50,7 @@ public class IdentificationService {
     }
 
     @Transactional
+    @LogOperation
     public void updateById(Identification identification) {
         Account currentUser = TokenUtils.getCurrentUser();  // 获取到当前的登录用户信息
         if (currentUser.getRole().equals(RoleEnum.ADMIN.name())) {
@@ -65,10 +68,12 @@ public class IdentificationService {
         identificationMapper.updateById(identification);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         identificationMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             identificationMapper.deleteById(id);

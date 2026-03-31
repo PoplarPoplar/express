@@ -26,6 +26,7 @@ public class AdminService {
     @Resource
     private AdminMapper adminMapper;
 
+    @LogOperation
     public void add(Admin admin) {
         Admin dbAdmin = adminMapper.selectByUsername(admin.getUsername());
         if (ObjectUtil.isNotNull(dbAdmin)) {
@@ -45,10 +46,12 @@ public class AdminService {
         adminMapper.updateById(admin);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         adminMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             adminMapper.deleteById(id);
@@ -72,6 +75,7 @@ public class AdminService {
     /**
      * 登录
      */
+    @LogOperation
     public Admin login(Account account) {
         Admin dbAdmin = adminMapper.selectByUsername(account.getUsername());
         if (ObjectUtil.isNull(dbAdmin)) {
@@ -89,6 +93,7 @@ public class AdminService {
     /**
      * 修改密码
      */
+    @LogOperation
     public void updatePassword(Account account) {
         Admin dbAdmin = adminMapper.selectByUsername(account.getUsername());
         if (ObjectUtil.isNull(dbAdmin)) {

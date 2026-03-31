@@ -1,6 +1,7 @@
 package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
+import com.example.anno.LogOperation;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.CashRecord;
@@ -27,6 +28,7 @@ public class CashRecordService {
     @Resource
     private StudentService studentService;
 
+    @LogOperation
     public void add(CashRecord cashRecord) {
         Account currentUser = TokenUtils.getCurrentUser();
         CashRecord record = cashRecordMapper.selectByCourierId(currentUser.getId());
@@ -43,6 +45,7 @@ public class CashRecordService {
     }
 
     @Transactional
+    @LogOperation
     public void updateById(CashRecord cashRecord) {
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.ADMIN.name().equals(currentUser.getRole()) && "通过".equals(cashRecord.getStatus())) {
@@ -54,10 +57,12 @@ public class CashRecordService {
         cashRecordMapper.updateById(cashRecord);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         cashRecordMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             cashRecordMapper.deleteById(id);

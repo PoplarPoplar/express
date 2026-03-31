@@ -2,6 +2,7 @@ package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.http.HtmlUtil;
+import com.example.anno.LogOperation;
 import com.example.entity.Information;
 import com.example.mapper.InformationMapper;
 import com.github.pagehelper.PageHelper;
@@ -20,20 +21,24 @@ public class InformationService {
     @Resource
     private InformationMapper informationMapper;
 
+    @LogOperation
     public void add(Information information) {
         information.setTime(DateUtil.now());
         information.setViewCount(0);
         informationMapper.insert(information);
     }
 
+    @LogOperation
     public void updateById(Information information) {
         informationMapper.updateById(information);
     }
 
+    @LogOperation
     public void deleteById(Integer id) {
         informationMapper.deleteById(id);
     }
 
+    @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             informationMapper.deleteById(id);
@@ -57,6 +62,7 @@ public class InformationService {
         return PageInfo.of(list);
     }
 
+    @LogOperation
     public void updateViewCount(Integer id) {
         informationMapper.updateViewCount(id);
     }
