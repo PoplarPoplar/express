@@ -10,8 +10,12 @@ import com.example.entity.Student;
 import com.example.exception.CustomException;
 import com.example.mapper.OrdersMapper;
 import com.example.utils.TokenUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 业务层方法
@@ -26,12 +31,20 @@ import java.util.List;
 @Service
 public class OrdersService {
 
+    private static final String ORDER_ID_CACHE_KEY = "orders:id:";
+    private static final String ORDER_NO_CACHE_KEY = "orders:no:";
+    private static final long ORDER_CACHE_TTL_MINUTES = 10L;
+
     @Resource
     private OrdersMapper ordersMapper;
     @Resource
     private StudentService studentService;
     @Resource
     private CourierCommissionService courierCommissionService;
+    @Resource
+    private ObjectMapper objectMapper;
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
 
     @LogOperation
     public void add(Orders orders) {
@@ -42,11 +55,13 @@ public class OrdersService {
         orders.setStatus("待支付");
         orders.setRate(0D);
         ordersMapper.insert(orders);
+        clearOrderCacheByOrderNo(orders.getOrderNo());
     }
 
     @Transactional
     @LogOperation
     public void updateById(Orders orders) {
+        Orders oldOrder = orders.getId() == null ? null : ordersMapper.selectById(orders.getId());
         Account currentUser = TokenUtils.getCurrentUser();
         if (RoleEnum.STUDENT.name().equals(currentUser.getRole())) {
             String status = orders.getStatus();
@@ -81,27 +96,51 @@ public class OrdersService {
             }
         }
         ordersMapper.updateById(orders);
+        if (oldOrder != null) {
+            clearOrderCacheById(oldOrder.getId());
+            clearOrderCacheByOrderNo(oldOrder.getOrderNo());
+        }
+        clearOrderCacheById(orders.getId());
+        clearOrderCacheByOrderNo(orders.getOrderNo());
     }
 
     @LogOperation
     public void deleteById(Integer id) {
+        Orders oldOrder = ordersMapper.selectById(id);
         ordersMapper.deleteById(id);
+        if (oldOrder != null) {
+            clearOrderCacheByOrderNo(oldOrder.getOrderNo());
+        }
+        clearOrderCacheById(id);
     }
 
     @LogOperation
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
+            Orders oldOrder = ordersMapper.selectById(id);
             ordersMapper.deleteById(id);
+            if (oldOrder != null) {
+                clearOrderCacheByOrderNo(oldOrder.getOrderNo());
+            }
+            clearOrderCacheById(id);
         }
     }
 
     public Orders selectById(Integer id) {
-        Orders orders = ordersMapper.selectById(id);
+        String cacheKey = ORDER_ID_CACHE_KEY + id;
+        Orders orders = readOrderCache(cacheKey);
+        if (orders == null) {
+            orders = ordersMapper.selectById(id);
+        }
+        if (orders == null) {
+            return null;
+        }
         // 查询有代取员的订单的代取员评分
         if (orders.getCourierId() != null) {
+            Integer courierId = orders.getCourierId();
             List<Orders> ordersList = this.selectAll(null);
             List<Double> rateList = ordersList.stream().filter(o -> o.getRate() != null)
-                    .filter(o -> o.getCourierId() != null && o.getCourierId().equals(orders.getCourierId()))
+                .filter(o -> o.getCourierId() != null && o.getCourierId().equals(courierId))
                     .map(Orders::getRate).filter(r -> r > 0).toList();
             if (!rateList.isEmpty()) {
                 Double total = rateList.stream().reduce(Double::sum).orElse(0D);
@@ -110,22 +149,40 @@ public class OrdersService {
             }
         }
 
+        writeOrderCache(cacheKey, orders);
+        if (orders.getOrderNo() != null) {
+            writeOrderCache(ORDER_NO_CACHE_KEY + orders.getOrderNo(), orders);
+        }
+
         return orders;
     }
 
     public Orders selectByOrderNo(String orderNo) {
-        Orders orders = ordersMapper.selectByOrderNo(orderNo);
+        String cacheKey = ORDER_NO_CACHE_KEY + orderNo;
+        Orders orders = readOrderCache(cacheKey);
+        if (orders == null) {
+            orders = ordersMapper.selectByOrderNo(orderNo);
+        }
+        if (orders == null) {
+            return null;
+        }
         // 查询有代取员的订单的代取员评分
         if (orders.getCourierId() != null) {
+            Integer courierId = orders.getCourierId();
             List<Orders> ordersList = this.selectAll(null);
             List<Double> rateList = ordersList.stream().filter(o -> o.getRate() != null)
-                    .filter(o -> o.getCourierId() != null && o.getCourierId().equals(orders.getCourierId()))
+                .filter(o -> o.getCourierId() != null && o.getCourierId().equals(courierId))
                     .map(Orders::getRate).filter(r -> r > 0).toList();
             if (!rateList.isEmpty()) {
                 Double total = rateList.stream().filter(r -> r > 0).reduce(Double::sum).orElse(0D);
                 BigDecimal courierRate = BigDecimal.valueOf(total).divide(BigDecimal.valueOf(rateList.size()), 2, BigDecimal.ROUND_HALF_UP);
                 orders.setCourierRate(courierRate.doubleValue());
             }
+        }
+
+        writeOrderCache(cacheKey, orders);
+        if (orders.getId() != null) {
+            writeOrderCache(ORDER_ID_CACHE_KEY + orders.getId(), orders);
         }
         return orders;
     }
@@ -149,6 +206,53 @@ public class OrdersService {
         PageHelper.startPage(pageNum, pageSize);
         List<Orders> list = ordersMapper.selectAll(orders);
         return PageInfo.of(list);
+    }
+
+    private Orders readOrderCache(String key) {
+        if (stringRedisTemplate == null) {
+            return null;
+        }
+        try {
+            String json = stringRedisTemplate.opsForValue().get(key);
+            if (json == null || json.isBlank()) {
+                return null;
+            }
+            return objectMapper.readValue(json, Orders.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void writeOrderCache(String key, Orders orders) {
+        if (stringRedisTemplate == null || orders == null) {
+            return;
+        }
+        try {
+            String json = objectMapper.writeValueAsString(orders);
+            stringRedisTemplate.opsForValue().set(key, json, ORDER_CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+        } catch (JsonProcessingException ignored) {
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void clearOrderCacheById(Integer id) {
+        if (id == null || stringRedisTemplate == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(ORDER_ID_CACHE_KEY + id);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void clearOrderCacheByOrderNo(String orderNo) {
+        if (orderNo == null || orderNo.isBlank() || stringRedisTemplate == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(ORDER_NO_CACHE_KEY + orderNo);
+        } catch (Exception ignored) {
+        }
     }
 
 }
